@@ -1,6 +1,12 @@
+<!-- readme-padrao:header -->
 <!-- Banner -->
 <div align="center">
   <img src="https://capsule-render.vercel.app/api?type=waving&color=0:0d1117,50:1a1a2e,100:00d9ff&height=200&section=header&text=neurograph&fontSize=54&fontColor=ffffff&animation=fadeIn&fontAlignY=36&desc=A%20neural%20network%20inside%20a%20real%20brain&descAlignY=58&descSize=16" alt="neurograph" width="100%" />
+</div>
+
+<!-- Typing -->
+<div align="center">
+  <img src="https://readme-typing-svg.demolab.com?font=JetBrains+Mono&weight=600&size=21&duration=2800&pause=900&color=00d9ff&center=true&vCenter=true&width=840&lines=A+neural+network+inside+a+real+brain;Nodes+are+born+on+52+real+sulci%2C+spaced+by+arc+length;Turn+the+outline+off+and+it+still+reads+as+a+brain;Zero+dependencies%2C+one+canvas%2C+HTML+React+or+Next.js" alt="A neural network inside a real brain" />
 </div>
 
 <div align="center">
@@ -20,20 +26,35 @@
   </p>
 
   <p>
-  <a href="#the-honest-part-first">The honest part first</a> •
-  <a href="#quick-start">Quick start</a> •
-  <a href="#see-it">See it</a> •
-  <a href="#where-the-anatomy-comes-from">Where the anatomy comes from</a> •
-  <a href="#options">Options</a> •
-  <a href="#javascript-api">JavaScript API</a> •
-  <a href="#other-shapes">Other shapes</a> •
-  <a href="#performance">Performance</a> •
-  <a href="#swap-the-shape">Swap the shape</a> •
-  <a href="#license">License</a>
+    <a href="#the-honest-part-first">The honest part first</a> •
+    <a href="#quick-start">Quick start</a> •
+    <a href="#see-it">See it</a> •
+    <a href="#where-the-anatomy-comes-from">Where the anatomy comes from</a> •
+    <a href="#options">Options</a> •
+    <a href="#javascript-api">JavaScript API</a> •
+    <a href="#other-shapes">Other shapes</a> •
+    <a href="#license">License</a>
   </p>
 </div>
 
 <br>
+
+> **neurograph** ships the anatomy as data: a public domain lateral illustration was traced with marching squares and simplified to 10KB of polylines, so the component draws a real cortex with no image request, no WebGL and no dependencies.
+
+## What it is
+
+```yaml
+product:   animated brain network for hero sections and backgrounds
+runtime:   plain canvas 2D, no WebGL, no build step, about 25KB
+anatomy:   1 outline + 52 sulci traced from a public domain illustration, about 10KB of points
+placement: nodes born on the sulci at constant arc length, each held by a spring
+modes:     brain · globe · free field
+use with:  plain HTML · React · Next.js (use client included)
+a11y:      honours prefers-reduced-motion with a single static frame
+license:   MIT
+```
+
+<!-- /readme-padrao:header -->
 
 Every "particles with lines" background draws the same floating cloud. neurograph
 draws a **brain**: the silhouette, the cerebellum, the brain stem and 52 real sulci
@@ -257,12 +278,14 @@ is legally required for public-domain work; the credit is courtesy.
 
 [MIT](LICENSE) © Leonardo Candiani
 
+<!-- readme-padrao:footer -->
 <br>
 
 ---
 
 <div align="center">
   <p><strong>Built by <a href="https://github.com/leonardocandiani">Leonardo Candiani</a></strong> · More projects at <a href="https://github.com/leonardocandiani?tab=repositories">github.com/leonardocandiani</a></p>
+  <p>Leonardo Candiani builds AI agents that talk, decide and close deals. Cofounder of SixQuasar, operating Proteauto, SegSmart and IACall end to end.</p>
   <a href="https://leonardocandiani.com.br">
     <img src="https://img.shields.io/badge/-Website-0d1117?style=for-the-badge&logo=safari&logoColor=00d9ff" alt="Website" />
   </a>
@@ -282,3 +305,4 @@ is legally required for public-domain work; the credit is courtesy.
 <div align="center">
   <img src="https://capsule-render.vercel.app/api?type=waving&color=0:00d9ff,50:1a1a2e,100:0d1117&height=120&section=footer&text=Thanks%20for%20stopping%20by&fontSize=18&fontColor=ffffff&fontAlignY=72" alt="Thanks for stopping by" width="100%" />
 </div>
+<!-- /readme-padrao:footer -->
