@@ -1,0 +1,46 @@
+{
+  "name": "neurograph",
+  "desc": "A neural network inside a real brain",
+  "typing": [
+    "A neural network inside a real brain",
+    "Nodes are born on 52 real sulci, spaced by arc length",
+    "Turn the outline off and it still reads as a brain",
+    "Zero dependencies, one canvas, HTML React or Next.js"
+  ],
+  "hero": [
+    {
+      "src": "assets/hero.webp",
+      "alt": "neurograph: a network of glowing nodes filling an anatomical brain silhouette",
+      "width": 820
+    }
+  ],
+  "tagline": "Connected nodes that follow the real folds of a human brain.",
+  "badges": [
+    "license",
+    {
+      "label": "dependencies",
+      "msg": "zero",
+      "color": "ACCENT"
+    },
+    {
+      "label": "size",
+      "msg": "~25KB"
+    },
+    {
+      "label": "works with",
+      "msg": "HTML, React, Next.js"
+    },
+    "prs"
+  ],
+  "pitch": "**neurograph** ships the anatomy as data: a public domain lateral illustration was traced with marching squares and simplified to 10KB of polylines, so the component draws a real cortex with no image request, no WebGL and no dependencies.",
+  "what": {
+    "product": "animated brain network for hero sections and backgrounds",
+    "runtime": "plain canvas 2D, no WebGL, no build step, about 25KB",
+    "anatomy": "1 outline + 52 sulci traced from a public domain illustration, about 10KB of points",
+    "placement": "nodes born on the sulci at constant arc length, each held by a spring",
+    "modes": "brain · globe · free field",
+    "use with": "plain HTML · React · Next.js (use client included)",
+    "a11y": "honours prefers-reduced-motion with a single static frame",
+    "license": "MIT"
+  }
+}
