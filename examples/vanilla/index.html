@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>neurograph — vanilla ESM example</title>
+  <style>
+    html, body { height: 100%; margin: 0; background: #05070f; }
+    canvas { display: block; width: 100vw; height: 100vh; }
+  </style>
+</head>
+<body>
+  <canvas id="brain"></canvas>
+
+  <!--
+    HEADS UP: <script type="module"> does not work over file:// (Chrome blocks it).
+    Serve the repo root, for example:
+
+        npx serve .            or        python3 -m http.server 8000
+
+    then open http://localhost:8000/examples/vanilla/
+
+    If you just want to see it running with no server at all, open the
+    index.html at the repo root: it is fully self-contained.
+  -->
+  <script type="module">
+    import { createNeurograph } from "../../src/neurograph.js";
+
+    const brain = createNeurograph(document.getElementById("brain"), {
+      count: 1100,
+      followSulci: 0.6,
+      linkDistance: 46,
+      colorA: "#22d3ee",
+      colorB: "#a855f7",
+    });
+
+    // cycle the palette every 6s, just to show update() at runtime
+    const palettes = [
+      ["#22d3ee", "#a855f7"],
+      ["#34d399", "#0ea5e9"],
+      ["#f472b6", "#f59e0b"],
+    ];
+    let i = 0;
+    setInterval(() => {
+      i = (i + 1) % palettes.length;
+      brain.update({ colorA: palettes[i][0], colorB: palettes[i][1] });
+    }, 6000);
+
+    // play in the console: brain.update({ count: 1500, shape: 'globe' })
+    window.brain = brain;
+  </script>
+</body>
+</html>
