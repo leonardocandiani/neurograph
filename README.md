@@ -252,9 +252,19 @@ the brain.
   comfortably; ~1600 is a sane ceiling on a normal machine.
 - `devicePixelRatio` is capped at 2 (`maxDpr`) so 3x displays don't quadruple the
   fill cost.
+- Links are batched into a handful of `Path2D` objects (one per tone/alpha bucket)
+  and stroked once each, instead of one `stroke()` per link. That cut the JS time
+  per frame 3-6x.
+- Node glow is a pre-rendered radial-gradient sprite drawn with `drawImage`, not
+  `shadowBlur`. Shadowed arcs by the hundred fall on the slow raster path and hold
+  the frame rate at 6-20fps even when the JS callback is cheap; the sprite keeps
+  the look and lets the frame run at 60fps. `shadowBlur` is only used on the few
+  pulses.
+- Drawing is capped at ~60fps on 120Hz displays. Motion is per frame, not per
+  `dt`, so this also keeps the speed the same on both.
 - The brain mode calls `isPointInPath` per node per frame to keep nodes inside the
-  silhouette. That is the single most expensive part; lower `count` before
-  anything else.
+  silhouette. Measured, it is cheap (~0.5us per call); lower `count` before
+  anything else if you still need headroom.
 - Call `brain.stop()` when the element leaves the viewport (`IntersectionObserver`)
   if you care about battery.
 - `prefers-reduced-motion: reduce` renders one static frame and stops. It still

@@ -51,8 +51,9 @@ export function createNeurograph(canvas, options = {}) {
   const ctx = canvas.getContext("2d");
   let o = { ...DEFAULTS, ...options };
 
-  let W = 0, H = 0, raf = 0, rot = 0, last = performance.now(), running = false;
-  let BRAIN = null, nodes = [], live = [], ripple = null;
+  let W = 0, H = 0, dpr = 1, raf = 0, rot = 0, last = performance.now(), running = false;
+  let lastDraw = -Infinity; // em 120 Hz desenha 1 frame a cada 2 (o movimento é por frame, calibrado a 60 Hz)
+  let BRAIN = null, nodes = [], live = [], ripples = [];
   const mouse = { x: -9999, y: -9999, on: false };
 
   const rnd = (a, b) => a + Math.random() * (b - a);
@@ -102,7 +103,9 @@ export function createNeurograph(canvas, options = {}) {
     BRAIN = { path, sPath, rails, bbox: { x: minX, y: minY, w: maxX - minX, h: maxY - minY }, S };
   }
 
-  const inside = (x, y) => ctx.isPointInPath(BRAIN.path, x, y, "nonzero");
+  // isPointInPath applies the current transform to the PATH but not to the
+  // POINT, so on a dpr-scaled canvas the point must be given in device pixels.
+  const inside = (x, y) => ctx.isPointInPath(BRAIN.path, x * dpr, y * dpr, "nonzero");
 
   /* Constant spacing along the sulci = uniform linear density.
      Without this the cerebellum, which is densely hatched, would swallow
@@ -160,7 +163,7 @@ export function createNeurograph(canvas, options = {}) {
   }
 
   function resize() {
-    const dpr = Math.min(window.devicePixelRatio || 1, o.maxDpr);
+    dpr = Math.min(window.devicePixelRatio || 1, o.maxDpr);
     W = canvas.clientWidth; H = canvas.clientHeight;
     if (!W || !H) return;
     canvas.width = Math.floor(W * dpr); canvas.height = Math.floor(H * dpr);
@@ -180,7 +183,26 @@ export function createNeurograph(canvas, options = {}) {
   }
 
   /* ---------------- render ---------------- */
+  // sprites do glow: 16 tons entre colorA e colorB, refeitos quando cor ou glow mudam
+  const GT = 16; let glowSprites = null, glowKey = "";
+  function glowSprite(tone, RA, RB) {
+    const key = o.colorA + o.colorB + o.glow;
+    if (glowKey !== key) { glowSprites = new Array(GT).fill(null); glowKey = key; }
+    const tb = Math.min(GT - 1, (tone * GT) | 0);
+    let s = glowSprites[tb]; if (s) return s;
+    const c = mix(RA, RB, (tb + 0.5) / GT), size = 64, cv = document.createElement("canvas");
+    cv.width = cv.height = size;
+    const g = cv.getContext("2d"), grd = g.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+    grd.addColorStop(0, `rgba(${c[0]},${c[1]},${c[2]},${(0.9 * o.glow).toFixed(3)})`);
+    grd.addColorStop(0.3, `rgba(${c[0]},${c[1]},${c[2]},${(0.4 * o.glow).toFixed(3)})`);
+    grd.addColorStop(1, `rgba(${c[0]},${c[1]},${c[2]},0)`);
+    g.fillStyle = grd; g.fillRect(0, 0, size, size);
+    return (glowSprites[tb] = cv);
+  }
+
   function frame(now) {
+    if (running && now - lastDraw < 12) { raf = requestAnimationFrame(frame); return; } // cap ~60 fps
+    lastDraw = now;
     const RA = hex2rgb(o.colorA), RB = hex2rgb(o.colorB);
     const dt = Math.min(32, now - last); last = now;
     rot += 0.00022 * dt * (0.3 + o.speed);
@@ -221,12 +243,22 @@ export function createNeurograph(canvas, options = {}) {
       }
       if (o.interactive && mouse.on) {
         const dx = n.x - mouse.x, dy = n.y - mouse.y, d = Math.hypot(dx, dy);
-        if (d < 150 && d > 0.001) { const f = (1 - d / 150) * 1.6; n.x += (dx / d) * f; n.y += (dy / d) * f; }
+        if (d < 150 && d > 0.001) {
+          const f = (1 - d / 150) * 1.6, px = n.x + (dx / d) * f, py = n.y + (dy / d) * f;
+          // brain: the mouse dents the network, it does not tear it. The push stops at
+          // 40px from the anchor and never leaves the silhouette.
+          if (o.shape !== "brain" || (Math.hypot(px - n.ox, py - n.oy) < 40 && inside(px, py))) { n.x = px; n.y = py; }
+        }
+      }
+      // a node the mouse pushed away snaps back instead of orbiting its anchor for seconds
+      if (o.shape === "brain" && Math.hypot(n.x - n.ox, n.y - n.oy) > 12) {
+        n.vx = (n.vx + (n.ox - n.x) * 0.02) * 0.9; n.vy = (n.vy + (n.oy - n.y) * 0.02) * 0.9;
       }
       n.t += 0.02 + n.r * 0.004;
     }
 
-    if (ripple) { ripple.r += 9; ripple.a *= 0.965; if (ripple.a < 0.02) ripple = null; }
+    for (const rp of ripples) { rp.r += 9; rp.a *= 0.965; }
+    ripples = ripples.filter((rp) => rp.a >= 0.02);
 
     // links through a spatial grid (O(n) instead of O(n²))
     const cell = o.linkDistance, grid = new Map(), key = (i, j) => i + "," + j;
@@ -235,6 +267,7 @@ export function createNeurograph(canvas, options = {}) {
       (grid.get(k) || grid.set(k, []).get(k)).push(idx);
     });
     ctx.lineWidth = 1;
+    const TB = 6, AB = 16, linkBuckets = new Array(TB * AB).fill(null);
     for (const n of nodes) {
       const ci = Math.floor(n.x / cell), cj = Math.floor(n.y / cell);
       for (let i = ci; i <= ci + 1; i++) for (let j = cj - 1; j <= cj + 1; j++) {
@@ -249,29 +282,45 @@ export function createNeurograph(canvas, options = {}) {
             const md = Math.hypot((n.x + m.x) / 2 - mouse.x, (n.y + m.y) / 2 - mouse.y);
             if (md < 150) a += (1 - md / 150) * 0.5;
           }
-          if (ripple) {
-            const rd = Math.abs(Math.hypot(n.x - ripple.x, n.y - ripple.y) - ripple.r);
-            if (rd < 60) a += (1 - rd / 60) * ripple.a;
+          for (const rp of ripples) {
+            const rd = Math.abs(Math.hypot(n.x - rp.x, n.y - rp.y) - rp.r);
+            if (rd < 60) a += (1 - rd / 60) * rp.a;
           }
-          const c = mix(RA, RB, (n.tone + m.tone) / 2);
-          ctx.strokeStyle = `rgba(${c[0]},${c[1]},${c[2]},${Math.min(a, 1).toFixed(3)})`;
-          ctx.beginPath(); ctx.moveTo(n.x, n.y); ctx.lineTo(m.x, m.y); ctx.stroke();
+          // um Path2D por balde de (tom, alpha): dezenas de strokes por frame em vez de milhares
+          const tb = Math.min(TB - 1, ((n.tone + m.tone) / 2 * TB) | 0);
+          const ab = Math.min(AB - 1, (Math.min(a, 1) * AB) | 0);
+          const bk = tb * AB + ab;
+          let p = linkBuckets[bk]; if (!p) p = linkBuckets[bk] = new Path2D();
+          p.moveTo(n.x, n.y); p.lineTo(m.x, m.y);
         }
       }
     }
+    for (let bk = 0; bk < linkBuckets.length; bk++) {
+      const p = linkBuckets[bk]; if (!p) continue;
+      const c = mix(RA, RB, ((bk / AB | 0) + 0.5) / TB);
+      ctx.strokeStyle = `rgba(${c[0]},${c[1]},${c[2]},${(((bk % AB) + 0.5) / AB).toFixed(3)})`;
+      ctx.stroke(p);
+    }
 
-    ctx.shadowBlur = 14 * o.glow;
+    // glow dos pontos por sprite (gradiente radial pré-renderizado por tom) em vez de shadowBlur:
+    // centenas de arcos com sombra por frame caem no raster lento e seguram o frame inteiro
+    // (tela cheia a 6 fps), mesmo com o JS barato. Frente perf3.
     for (const n of nodes) {
       const c = mix(RA, RB, n.tone);
       const puls = 0.75 + Math.sin(n.t) * 0.35;
       const a = (o.shape === "globe" ? n.z * 0.85 + 0.15 : 1) * (0.55 + 0.45 * puls);
-      ctx.shadowColor = `rgba(${c[0]},${c[1]},${c[2]},${0.9 * o.glow})`;
+      const rr = n.r * puls * (o.shape === "globe" ? 0.6 + n.z * 0.9 : 1);
+      if (o.glow > 0) {
+        const R = rr + 14 * o.glow;
+        ctx.globalAlpha = a;
+        ctx.drawImage(glowSprite(n.tone, RA, RB), n.x - R, n.y - R, 2 * R, 2 * R);
+        ctx.globalAlpha = 1;
+      }
       ctx.fillStyle = `rgba(${c[0]},${c[1]},${c[2]},${a.toFixed(3)})`;
       ctx.beginPath();
-      ctx.arc(n.x, n.y, n.r * puls * (o.shape === "globe" ? 0.6 + n.z * 0.9 : 1), 0, 6.283);
+      ctx.arc(n.x, n.y, rr, 0, 6.283);
       ctx.fill();
     }
-    ctx.shadowBlur = 0;
 
     let tries = 0;
     while (live.length < o.pulses && tries++ < 40) spawn();
@@ -305,7 +354,8 @@ export function createNeurograph(canvas, options = {}) {
   const onDown = (e) => {
     if (!o.interactive) return;
     const r = canvas.getBoundingClientRect();
-    ripple = { x: e.clientX - r.left, y: e.clientY - r.top, r: 0, a: 0.9 };
+    // every click fires its own wave; the older ones keep travelling (at most 8 alive)
+    ripples.push({ x: e.clientX - r.left, y: e.clientY - r.top, r: 0, a: 0.9 }); if (ripples.length > 8) ripples.shift();
     for (let i = 0; i < 25; i++) spawn();
   };
 
