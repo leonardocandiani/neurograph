@@ -162,7 +162,9 @@ cd examples/vite-react && npm install && npm run dev
 The same anatomy, lifted into a rotating particle cloud. It is a separate, optional
 module, so the 2D build stays exactly as it was: no WebGL, about 25KB.
 
-![neurograph 3D: a rotating particle brain with glowing links and traveling pulses](assets/brain-3d.webp)
+<p align="center">
+  <img src="assets/brain-3d.gif" alt="neurograph 3D: particles converge into a brain, then it rotates with glowing links and traveling pulses" width="600" />
+</p>
 
 ```bash
 open demo-3d.html        # self-contained, with a small control panel
