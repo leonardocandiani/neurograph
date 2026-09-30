@@ -14,6 +14,8 @@
   <br>
   <img src="assets/hero.webp" alt="neurograph: a network of glowing nodes filling an anatomical brain silhouette" width="820" />
   <br><br>
+  <img src="assets/brain-3d.gif" alt="neurograph 3D: particles converge into a brain, then it rotates with glowing links and traveling pulses" width="820" />
+  <br><br>
 
   <p><strong>Connected nodes that follow the real folds of a human brain.</strong></p>
 
