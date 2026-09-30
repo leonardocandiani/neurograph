@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>neurograph: 3D example</title>
+  <style>
+    html, body { height: 100%; margin: 0; background: #02050b; }
+    canvas { display: block; width: 100vw; height: 100vh; }
+  </style>
+</head>
+<body>
+  <canvas id="brain"></canvas>
+
+  <!--
+    HEADS UP: <script type="module"> does not work over file:// (Chrome blocks it).
+    Serve the repo root, for example:
+
+        npx serve .            or        python3 -m http.server 8000
+
+    then open http://localhost:8000/examples/3d/
+
+    For a page that needs no server at all, open demo-3d.html at the repo root.
+  -->
+  <script type="module">
+    import { createNeurograph } from "../../src/neurograph.js";
+    import { createNeurograph3D } from "../../src/neurograph3d.js";
+
+    const canvas = document.getElementById("brain");
+    let brain;
+    try {
+      brain = createNeurograph3D(canvas, { density: 1, pulses: 120 });
+    } catch (err) {
+      // no WebGL (or the GPU refused the shaders): a canvas that asked for WebGL
+      // cannot give a 2D context anymore, so the 2D brain gets a fresh one
+      const fresh = canvas.cloneNode(false);
+      canvas.replaceWith(fresh);
+      brain = createNeurograph(fresh, { count: 1100 });
+    }
+
+    // play in the console: brain.wave(), brain.update({ density: 0.44 })
+    window.brain = brain;
+  </script>
+</body>
+</html>

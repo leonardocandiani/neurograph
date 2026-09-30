@@ -72,10 +72,10 @@ No build step. No dependencies. No image requests. One canvas.
 
 | What it is | What it is not |
 | --- | --- |
-| A 2D canvas effect with real anatomical geometry baked in | A 3D brain model, an MRI viewer or a neuroscience tool |
-| One lateral (side) view, mirrorable with `flip` | Multiple angles, rotation or slices of a brain |
+| A 2D canvas effect with real anatomical geometry baked in, plus an optional [3D WebGL module](#3d-mode-webgl) built from the same data | A volumetric brain model, an MRI viewer or a neuroscience tool: the 3D depth is an ellipsoid shell, not real anatomy |
+| One lateral (side) view in 2D, mirrorable with `flip`; a slow orbit in 3D | Slices, or a brain you can inspect from above or below |
 | A decorative hero / background element | A data visualization: the links mean nothing |
-| ~25KB of JS, no assets to fetch | Free at any node count, see [Performance](#performance) |
+| ~25KB of JS for 2D, ~30KB more for 3D, no assets to fetch | Free at any node count, see [Performance](#performance) |
 
 The sulci are anatomically placed, but this is art direction, not science. If you
 need a real brain atlas, look at [Netron](https://netron.app) or a proper
@@ -156,6 +156,83 @@ cd examples/vite-react && npm install && npm run dev
 ```
 
 ![the React example running under Vite](assets/react.webp)
+
+## 3D mode (WebGL)
+
+The same anatomy, lifted into a rotating particle cloud. It is a separate, optional
+module, so the 2D build stays exactly as it was: no WebGL, about 25KB.
+
+![neurograph 3D: a rotating particle brain with glowing links and traveling pulses](assets/brain-3d.webp)
+
+```bash
+open demo-3d.html        # self-contained, with a small control panel
+```
+
+How the flat drawing becomes a volume:
+
+1. points are rejection-sampled inside the outline, and each one gets a depth from an
+   ellipsoid shell, on both hemispheres;
+2. the 52 sulci are resampled on both surfaces, denser and brighter, so the folds
+   still read from any angle;
+3. neighbors are linked through a spatial grid, and pulses travel along the links;
+4. a custom shader draws soft round points at the display's native resolution (up to
+   `maxDpr`), with depth fade, twinkle and a cyan to violet gradient;
+5. a slow camera orbit, an intro where the cloud converges into the brain, and waves
+   that light up the surface from any point.
+
+```js
+import { createNeurograph3D } from "./src/neurograph3d.js";
+
+let brain;
+try {
+  brain = createNeurograph3D(canvas, { density: 1, pulses: 120 });
+} catch (err) {
+  // no WebGL: fall back to the 2D module on a fresh canvas, because a canvas that
+  // already asked for WebGL can no longer give a 2D context
+  const fresh = canvas.cloneNode(false);
+  canvas.replaceWith(fresh);
+  brain = createNeurograph(fresh);
+}
+
+brain.wave();                              // light up the surface from a random point
+const p = brain.surfacePoint(300, 250);    // a point on the cortex, in BRAIN_SHAPE coordinates
+brain.update({ onFrame: () => {
+  const { x, y, visible } = brain.project(p);  // CSS pixels: pin an HTML label to the brain
+} });
+brain.destroy();
+```
+
+| Option | Default | What it does |
+| --- | --- | --- |
+| `density` | `1` | 1 is about 20k points and 23k links; 0.44 holds 30fps on a TV browser |
+| `links` | `true` | draw the neighbor links |
+| `pulses` | `120` | signals traveling along the links |
+| `stars` | `3000` | background star field, 0 disables |
+| `glow` | `1` | strength of the soft nebulas behind the brain |
+| `colorA` / `colorB` | `#66EBF7` / `#AD99FF` | gradient from front to back of the brain |
+| `background` | `#02050B` | clear color |
+| `autoRotate` / `rotateAmplitude` | `true` / `0.62` | slow orbit, amplitude in radians |
+| `intro` / `introMs` | `true` / `4200` | the converging intro |
+| `ambientWaves` | `true` | a wave on its own every 11 to 17 seconds |
+| `fps` | `0` | frame cap, 0 means uncapped (30 is a good value for TVs) |
+| `maxDpr` | `2` | devicePixelRatio ceiling |
+| `interactive` | `true` | drag rotates with inertia, click fires a wave |
+| `respectReducedMotion` | `true` | one static frame, no intro |
+| `onFrame` | `null` | called after each frame, handy to move labels |
+
+It throws `Error("neurograph3d: WebGL is not available")` when there is no context,
+and a `neurograph3d: shader compile failed` / `program link failed` error when the GPU
+rejects the shaders (the context is released first). It stops cleanly on
+`webglcontextlost` and rebuilds on restore. With `prefers-reduced-motion: reduce` it
+draws one static frame and `wave()` does nothing, on purpose: no flashes for people
+who asked for less motion. React users get
+`src/Neurograph3D.jsx`, a wrapper identical in shape to the 2D one. Types live in
+[`src/neurograph3d.d.ts`](src/neurograph3d.d.ts). After editing the module, run
+`python3 scripts/build-demo-3d.py` to refresh the inlined `demo-3d.html`.
+
+Measured on an Apple silicon desktop with the CPU throttled 6x in Chrome DevTools, at density
+0.44 and 30fps: 1.3ms of JavaScript per frame at p95. GPU time was not measured,
+and older TV GPUs are the real limit, so start low and raise `density`.
 
 ---
 
