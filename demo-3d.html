@@ -134,10 +134,25 @@ function inside(x, y) {
   return c;
 }
 
+function edgeDist(x, y) {
+  let best = 1e9;
+  for (let i = 0, j = OUT.length - 1; i < OUT.length; j = i++) {
+    const a = OUT[j], b = OUT[i], dx = b[0] - a[0], dy = b[1] - a[1];
+    const t = Math.max(0, Math.min(1, ((x - a[0]) * dx + (y - a[1]) * dy) / (dx * dx + dy * dy || 1)));
+    best = Math.min(best, Math.hypot(x - a[0] - t * dx, y - a[1] - t * dy));
+  }
+  return best;
+}
+
+// The ellipse alone leaves the shells tall where the outline is not elliptical,
+// so seen from the front each hemisphere was an open cap. Rounding off by the
+// distance to the outline brings both shells down to the midline at the edge.
 function zmax(x, y) {
   const ex = (x - CX) / RX, ey = (y - CY) / (RY * 1.05), e = ex * ex + ey * ey;
-  return HALF * Math.pow(Math.max(0, 1 - e), 0.62) + 0.02;
+  const u = 1 - Math.min(1, edgeDist(x, y) / 0.2);
+  return (HALF * Math.pow(Math.max(0, 1 - e), 0.62) + 0.02) * Math.sqrt(1 - u * u);
 }
+
 
 function makeRng() {
   let s = 20260929;
